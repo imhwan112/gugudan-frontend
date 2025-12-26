@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
+import { Feedback } from "./Feedback";
 import { StopIcon, PaperAirplaneIcon, SparklesIcon, HeartIcon, ChatBubbleLeftEllipsisIcon, ArrowsRightLeftIcon, FaceSmileIcon } from "@heroicons/react/24/outline";
 
 type Message = {
+  message_id?: number;
   role: "USER" | "ASSISTANT";
   content: string;
+  user_feedback?: "LIKE" | "DISLIKE" | null;
 };
 type RoomStatus = "ACTIVE" | "LOCKED" | "ENDED" | "UNKNOWN";
 
@@ -20,6 +23,9 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [targetMessageId, setTargetMessageId] = useState<number | null>(null);
+  const [feedbackScore, setFeedbackScore] = useState<"LIKE" | "DISLIKE" | null>(null);
   
   const abortControllerRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -41,7 +47,7 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
   }, [roomId]);
 
   /** 채팅 내역 + 상태 로드 */
-useEffect(() => {
+  useEffect(() => {
   if (!roomId) {
     setMessages([]);
     setRoomStatus("UNKNOWN");
@@ -170,6 +176,14 @@ useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "auto" });
       }
 
+      if (roomId) {
+        const syncRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/rooms/${roomId}/messages`, { credentials: "include" });
+        if (syncRes.ok) {
+          const syncData = await syncRes.json();
+          setMessages(syncData);
+        }
+      }
+
       if (!roomId) {
         const roomsRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/rooms`, { credentials: "include" });
         const rooms = await roomsRes.json();
@@ -183,6 +197,30 @@ useEffect(() => {
       abortControllerRef.current = null;
       setTimeout(() => inputRef.current?.focus(), 10);
     }
+  };
+
+  const sendFeedbackRequest = async (msgId: number, satisfaction: string, reason?: string, comment?: string) => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/feedback`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message_id: msgId,
+          satisfaction: satisfaction,
+          reason: reason || null,
+          comment: comment || null
+        }),
+      });
+    } catch (e) {
+      console.error("Feedback error:", e);
+    }
+  };
+
+  const handleFeedbackClick = (msgId: number, score: "LIKE" | "DISLIKE") => {
+    setTargetMessageId(msgId);
+    setFeedbackScore(score);
+    setIsModalOpen(true);
   };
 
   // 관계 고민 카테고리 데이터
@@ -300,7 +338,7 @@ useEffect(() => {
               </div>
             </div>
           ) : (
-            messages.map((msg, idx) => <ChatMessage key={idx} role={msg.role} content={msg.content} />)
+            messages.map((msg, idx) => <ChatMessage key={idx} message_id={msg.message_id} role={msg.role} content={msg.content} user_feedback={msg.user_feedback} onFeedback={handleFeedbackClick}/>)
           )}
           <div ref={bottomRef} className="h-24" />
         </div>
@@ -355,6 +393,42 @@ useEffect(() => {
           </p>
         </div>
       </div>
+      <Feedback 
+        isOpen={isModalOpen}
+        feedbackScore={feedbackScore}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={async (reason: string, comment: string) => {
+            if (targetMessageId && feedbackScore) {
+              const validReasons = [
+                "ACCURATE", "EMPATHETIC", "HELPFUL", 
+                "INACCURATE", "OFFENSIVE", "TOO_LONG", 
+                "NOT_EMPATHETIC", "IRRELEVANT"
+              ];
+
+              let finalReason: string;
+              let finalComment: string | undefined = undefined;
+
+              if (reason === "ETC") {
+                finalReason = "OTHER";
+                finalComment = comment || undefined; 
+              } else if (validReasons.includes(reason)) {
+                finalReason = reason;
+                finalComment = undefined;
+              } else {
+                finalReason = "OTHER";
+                finalComment = reason;
+              }
+
+              await sendFeedbackRequest(targetMessageId, feedbackScore, finalReason, finalComment);
+
+              setMessages((prev) =>
+                prev.map((m) => m.message_id === targetMessageId ? { ...m, user_feedback: feedbackScore } : m)
+              );
+              setIsModalOpen(false);
+              alert("의견을 보내주셔서 감사합니다.");
+            }
+          }}
+        />
     </div>
   );
 }
