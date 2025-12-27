@@ -4,9 +4,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/lib/constants";
+import { UserRole } from "@/types/auth";
 
 export function AppHeader() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b">
@@ -24,6 +26,7 @@ export function AppHeader() {
             <>
               <span className="text-sm text-gray-600">
                 안녕하세요, {user?.nickname}님
+                {isAdmin && <span className="ml-1 text-blue-600 font-semibold">(관리자)</span>}
               </span>
 
               <Link href={ROUTES.MY_PAGE}>
