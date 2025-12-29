@@ -2,10 +2,16 @@
  * Auth-related TypeScript types
  */
 
+export enum UserRole {
+  USER = "USER",
+  ADMIN = "ADMIN",
+}
+
 export interface User {
   id: number;
   email: string;
   nickname: string;
+  role: UserRole;
   terms_agreed: boolean;
   created_at: string;
 }

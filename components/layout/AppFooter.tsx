@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { UserRole } from "@/types/auth";
 import { useState } from "react";
 import Modal from "@/components/modal/Modal";
 import TermsContent from "@/components/legal/TermsContent";
@@ -9,7 +12,8 @@ type LegalKey = "terms" | "privacy" | null;
 
 export default function AppFooter() {
   const [openKey, setOpenKey] = useState<LegalKey>(null);
-
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = user?.role === UserRole.ADMIN;
   const close = () => setOpenKey(null);
 
   return (
@@ -55,6 +59,33 @@ export default function AppFooter() {
               </button>
             </li>
           </ul>
+          {isAdmin ? (
+            <>
+              <Link href="/admin/faqs" className="hover:text-blue-600 transition text-blue-500">
+                FAQ 관리
+              </Link>
+              <span className="text-gray-300">|</span>
+              <Link href="/admin/inquiries" className="hover:text-blue-600 transition text-blue-500">
+                문의 관리
+              </Link>
+              <span className="text-gray-300">|</span>
+            </>
+          ) : (
+            <>
+              <Link href="/faq" className="hover:text-gray-900 transition">
+                FAQ
+              </Link>
+              <span className="text-gray-300">|</span>
+              {isAuthenticated && (
+                <>
+                  <Link href="/inquiry" className="hover:text-gray-900 transition">
+                    1:1 문의
+                  </Link>
+                  <span className="text-gray-300">|</span>
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {/* 하단 고지 */}
