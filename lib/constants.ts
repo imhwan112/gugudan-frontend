@@ -37,6 +37,7 @@ export const OAUTH_PROVIDERS = {
   GOOGLE: "google",
   KAKAO: "kakao",
   NAVER: "naver",
+  META: "meta",
 } as const;
 
 export type OAuthProvider = (typeof OAUTH_PROVIDERS)[keyof typeof OAUTH_PROVIDERS];

@@ -65,6 +65,19 @@ const providerConfig: Record<
       </svg>
     ),
   },
+  meta: {
+    label: "Continue with Meta",
+    bgColor: "bg-[#1877F2] hover:bg-[#166FE5]",
+    textColor: "text-white",
+    icon: (
+      <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+        <path
+          fill="white"
+          d="M22 12.07C22 6.53 17.52 2 12 2S2 6.53 2 12.07C2 17.08 5.66 21.23 10.44 22v-7.03H7.9v-2.9h2.54V9.85c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.2 2.23.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.44 2.9h-2.34V22C18.34 21.23 22 17.08 22 12.07z"
+        />
+      </svg>
+    ),
+  },
 };
 
 export function LoginButton({ provider, className = "" }: LoginButtonProps) {
@@ -109,4 +122,8 @@ export function KakaoLoginButton({ className }: { className?: string }) {
 
 export function NaverLoginButton({ className }: { className?: string }) {
   return <LoginButton provider={OAUTH_PROVIDERS.NAVER} className={className} />;
+}
+
+export function MetaLoginButton({ className }: { className?: string }) {
+  return <LoginButton provider={OAUTH_PROVIDERS.META} className={className} />;
 }

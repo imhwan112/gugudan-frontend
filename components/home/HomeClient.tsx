@@ -9,6 +9,10 @@ import { ROUTES } from "@/lib/constants";
 import { Button } from "@/components/ui/Button";
 import { useRouter } from "next/navigation";
 import { startNewChat } from "@/lib/chatNav";
+import AppFooter from "../layout/AppFooter";
+import ServiceSection from "@/components/home/ServiceSection";
+import MbtiSection from "@/components/home/MbtiSection";
+import TeamSection from "@/components/home/TeamSection";
 
 type ConsultationTopic = "marriage" | "dating" | "crush" | null;
 
@@ -58,7 +62,8 @@ export default function HomeClient() {
 const canStart = !isLoading && isAuthenticated;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50">
+  <div className="min-h-screen">
+    <section className="bg-gradient-to-b from-purple-50 to-pink-50">
       <main className="max-w-6xl mx-auto px-4 py-12">
         {/* Hero */}
         <div className="text-center max-w-3xl mx-auto mb-12">
@@ -87,8 +92,6 @@ const canStart = !isLoading && isAuthenticated;
             return (
               <div
                 key={t.id}
-                // (요구사항 반영) "클릭 선택" 없애고, hover 줌업만 하고 싶으면:
-                // onClick 제거 + button 대신 div 사용
                 className={`overflow-hidden rounded-2xl bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02]`}
               >
                 <div className="relative h-48">
@@ -120,23 +123,11 @@ const canStart = !isLoading && isAuthenticated;
           })}
         </div>
         
-<div className="mt-6 mx-auto max-w-xl rounded-xl bg-white/60 px-5 py-3 shadow-sm">
-  <div className="flex items-center justify-center gap-2 text-center">
-    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-100 text-sm">
-      ✨
-    </div>
-
-    <p className="text-sm text-gray-600 leading-relaxed">
-      로그인 후 <span className="font-medium text-gray-800">My Page</span>에서
-      <span className="font-medium text-gray-800"> 성별 · MBTI</span>를 입력하면  
-      AI가 더 <span className="font-medium text-gray-800">맞춤형</span>으로 상담해줘요.
-    </p>
-  </div>
-</div>
-
-
-
-
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-purple-200 rounded-full text-gray-700 mb-8">
+            🌟 로그인 후 My Page에서 성별 · MBTI를 입력하면 AI 더 맞춤형으로 상담해줘요
+          </div>
+        </div>
 
         {/* CTA */}
         <div className="text-center mt-10">
@@ -152,40 +143,18 @@ const canStart = !isLoading && isAuthenticated;
             <div className="h-[76px]" />
           )}
         </div>
-
-        {/* Features */}
-        <div className="mt-16 grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div className="text-center p-6">
-            <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              🔒
-            </div>
-            <h3 className="text-gray-900 font-semibold mb-2">완벽한 비밀 보장</h3>
-            <p className="text-sm text-gray-600">
-              대화 내용은 암호화되어 안전하게 보호돼요
-            </p>
-          </div>
-
-          <div className="text-center p-6">
-            <div className="w-14 h-14 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              💬
-            </div>
-            <h3 className="text-gray-900 font-semibold mb-2">즉각적인 응답</h3>
-            <p className="text-sm text-gray-600">
-              기다릴 필요 없이 바로 대화를 시작해요
-            </p>
-          </div>
-
-          <div className="text-center p-6">
-            <div className="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              💜
-            </div>
-            <h3 className="text-gray-900 font-semibold mb-2">따뜻한 공감</h3>
-            <p className="text-sm text-gray-600">
-              판단하지 않고 당신의 이야기를 경청해요
-            </p>
-          </div>
-        </div>
       </main>
+      </section>
+    {/* 2) Service 섹션: 배경 분리 */}
+    <section className="bg-white/40">
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <ServiceSection/>
+      </div>
+    </section>
+
+    <MbtiSection />
+    <TeamSection />
+    <AppFooter/>
     </div>
   );
 }
