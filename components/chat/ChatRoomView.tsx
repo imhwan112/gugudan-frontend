@@ -10,14 +10,19 @@ import {
     HeartIcon,
     PaperAirplaneIcon,
     SparklesIcon,
-    StopIcon
+    StopIcon,
+    XMarkIcon,
+    PaperClipIcon,
+    DocumentIcon
 } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
 type Message = {
   message_id?: number;
   role: "USER" | "ASSISTANT";
   content: string;
   user_feedback?: "LIKE" | "DISLIKE" | null;
+  file_urls?: string[];
 };
 type RoomStatus = "ACTIVE" | "LOCKED" | "ENDED" | "UNKNOWN";
 
@@ -25,6 +30,19 @@ interface Props {
   roomId: string | null;
   onRoomCreated: (roomId: string) => void;
 }
+
+interface FileItem {
+  file: File;
+  previewUrl: string | null;
+  name: string;
+}
+
+interface ChatRequestPayload {
+  room_id: string | null;
+  message: string;
+  file_urls?: string[];
+}
+
 
 export function ChatRoomView({ roomId, onRoomCreated }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,6 +52,10 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [targetMessageId, setTargetMessageId] = useState<number | null>(null);
   const [feedbackScore, setFeedbackScore] = useState<"LIKE" | "DISLIKE" | null>(null);
+
+  const MAX_FILES = 4;
+  const [selectedFiles, setSelectedFiles] = useState<FileItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const abortControllerRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -54,13 +76,50 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
     inputRef.current?.focus();
   }, [roomId]);
 
+  // 파일 선택 핸들러
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    if (selectedFiles.length + files.length > MAX_FILES) {
+      alert(`파일은 최대 ${MAX_FILES}개까지만 업로드할 수 있습니다.`);
+      return;
+    }
+
+    files.forEach((file) => {
+      const isImage = file.type.startsWith("image/");
+      const newItem: FileItem = {
+        file: file,
+        name: file.name,
+        previewUrl: null
+      };
+
+      if (isImage) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          newItem.previewUrl = reader.result as string;
+          setSelectedFiles((prev) => [...prev, newItem]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setSelectedFiles((prev) => [...prev, newItem]);
+      }
+    });
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // 파일 제거 핸들러
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   /** 채팅 내역 + 상태 로드 */
   useEffect(() => {
-  if (!roomId) {
-    setMessages([]);
-    setRoomStatus("UNKNOWN");
-    return;
-  }
+    if (!roomId) {
+      setMessages([]);
+      setRoomStatus("UNKNOWN");
+      return;
+    }
 
   // 상담 상태에 대한 추가
   const fetchRoomStatus = async () => {
@@ -125,23 +184,59 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
     const finalContent = textToSend || input;
     if (!finalContent.trim() || loading) return;
 
-    abortControllerRef.current = new AbortController();
-    setInput("");
     setLoading(true);
+    abortControllerRef.current = new AbortController();
 
-    // 1. UI에 즉시 메시지 추가
-    setMessages((prev) => [
-      ...prev, 
-      { role: "USER", content: finalContent }, 
-      { role: "ASSISTANT", content: "" }
-    ]);
+    const currentFiles = [...selectedFiles];
+    setInput("");
+    setSelectedFiles([]);
 
     try {
+      let uploadedUrls: string[] = [];
+
+      if (currentFiles.length > 0) {
+        const uploadPromises = currentFiles.map(async (item) => {
+          const formData = new FormData();
+          formData.append("file", item.file);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/upload`, {
+            method: "POST",
+            credentials: "include",
+            body: formData,
+          });
+        if (res.ok) {
+            const data = await res.json();
+            return data.file_url; 
+          }
+          return null;
+        });
+        const results = await Promise.all(uploadPromises);
+        uploadedUrls = results.filter((url): url is string => typeof url === "string" && url.length > 0);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "USER",
+          content: finalContent,
+          file_urls: uploadedUrls,
+        },
+        { role: "ASSISTANT", content: "" },
+      ]);
+
+      const payload: ChatRequestPayload = {
+        room_id: roomId,
+        message: finalContent,
+      };
+
+      if (uploadedUrls.length > 0) {
+        payload.file_urls = uploadedUrls;
+      }
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/chat/stream-auto`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ room_id: roomId, message: finalContent }),
+        body: JSON.stringify(payload),
         signal: abortControllerRef.current.signal,
       });
 
@@ -184,13 +279,32 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
         bottomRef.current?.scrollIntoView({ behavior: "auto" });
       }
 
-      if (roomId) {
-        const syncRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/rooms/${roomId}/messages`, { credentials: "include" });
-        if (syncRes.ok) {
-          const syncData = await syncRes.json();
-          setMessages(syncData);
-        }
+    if (roomId) {
+      const syncRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/rooms/${roomId}/messages`,
+        { credentials: "include" }
+      );
+
+      if (syncRes.ok) {
+        const syncData: Message[] = await syncRes.json();
+
+        setMessages((prev) => {
+          return syncData.map((serverMsg) => {
+            if (serverMsg.role !== "USER") return serverMsg;
+
+            const local = prev.find(
+              (p) =>
+                p.role === "USER" &&
+                p.content === serverMsg.content &&
+                p.file_urls &&
+                p.file_urls.length > 0
+            );
+
+            return local ?? serverMsg;
+          });
+        });
       }
+    }
 
       if (!roomId) {
         const roomsRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/conversation/rooms`, { credentials: "include" });
@@ -346,7 +460,7 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
               </div>
             </div>
           ) : (
-            messages.map((msg, idx) => <ChatMessage key={idx} message_id={msg.message_id} role={msg.role} content={msg.content} user_feedback={msg.user_feedback} onFeedback={handleFeedbackClick}/>)
+            messages.map((msg, idx) => <ChatMessage key={idx} message_id={msg.message_id} role={msg.role} content={msg.content} user_feedback={msg.user_feedback} file_urls={msg.file_urls} onFeedback={handleFeedbackClick}/>)
           )}
           <div ref={bottomRef} className="h-24" />
         </div>
@@ -355,7 +469,49 @@ export function ChatRoomView({ roomId, onRoomCreated }: Props) {
       {/* Input Area */}
       <div className="border-t bg-white p-4 md:p-6">
         <div className="max-w-3xl mx-auto relative group">
+          <div className="flex flex-wrap gap-2 px-2 mb-3">
+            {selectedFiles.map((item, idx) => (
+              <div key={idx} className="relative group w-24 h-24 bg-gray-50 rounded-xl border-2 border-gray-100 flex flex-col items-center justify-center p-2 text-center shadow-sm">
+                {item.previewUrl ? (
+                  <Image src={item.previewUrl} alt="preview" fill className="object-cover rounded-xl" unoptimized />
+                ) : (
+                  <>
+                    <DocumentIcon className="w-8 h-8 text-gray-400 mb-1" />
+                    <span className="text-[10px] text-gray-500 line-clamp-2 break-all">{item.name}</span>
+                  </>
+                )}
+                <button 
+                  onClick={() => removeFile(idx)}
+                  className="absolute -top-2 -right-2 bg-gray-900 text-white rounded-full p-1 hover:bg-red-500 z-10 shadow-md"
+                >
+                  <XMarkIcon className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
           <div className="flex items-end gap-2 bg-gray-50 border border-gray-200 rounded-2xl p-2 focus-within:bg-white focus-within:border-pink-300 focus-within:ring-4 focus-within:ring-pink-50 transition-all">
+          <input 
+              type="file" 
+              multiple 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={handleFileChange} 
+              accept="*/*" 
+            />
+            <div className="flex flex-col items-center">
+              <button 
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isInputBlocked || selectedFiles.length >= MAX_FILES}
+                className="p-2.5 text-gray-400 hover:text-pink-500 hover:bg-pink-50 rounded-xl transition-all disabled:opacity-20"
+              >
+                <PaperClipIcon className="w-6 h-6" />
+              </button>
+              {selectedFiles.length > 0 && (
+                <span className="text-[9px] font-bold text-pink-500 mb-1">{selectedFiles.length}/{MAX_FILES}</span>
+              )}
+            </div>
+
             <textarea
               ref={inputRef}
               rows={1}
