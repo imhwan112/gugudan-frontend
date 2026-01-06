@@ -4,7 +4,7 @@ import Script from 'next/script';
 import {AuthProvider} from "@/components/auth/AuthProvider";
 import {AppHeader} from "@/components/layout/AppHeader";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "Gugudan";
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "Love-Note";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -64,7 +64,7 @@ export default function RootLayout({
                 />
             )}
             {/*title은 metadata가 자동 생성함 */}
-            {/* <title>Gugudan</title> */} 
+            {/* <title>러브노트</title> */} 
         </head>
         <body>
             

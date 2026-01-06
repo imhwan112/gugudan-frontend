@@ -13,7 +13,7 @@ export function AppHeader() {
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <Link href={ROUTES.HOME ?? "/"}>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-            Gugudan
+            러브노트
           </h1>
         </Link>
 

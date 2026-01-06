@@ -18,14 +18,6 @@ export default function AppFooter() {
 
   const baseLinks: { key: string; node: React.ReactNode }[] = [
     {
-      key: "notice",
-      node: (
-        <a href="#" className="hover:text-purple-400 transition-colors">
-          공지사항
-        </a>
-      ),
-    },
-    {
       key: "terms",
       node: (
         <button

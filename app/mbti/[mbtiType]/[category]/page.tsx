@@ -5,7 +5,7 @@ import { categoryInfo, type CategoryKey } from "@/app/mbti/_content/categoryInfo
 import { mbtiDescriptions } from "@/app/mbti/_content/mbtiMeta";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "Gugudan";
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME ?? "Love-Note";
 
 const VALID_CATEGORIES: CategoryKey[] = ["marriage", "dating", "crush"];
 const VALID_MBTI = new Set(Object.keys(mbtiDescriptions)); // "INTJ" 등

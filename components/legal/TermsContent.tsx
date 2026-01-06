@@ -4,7 +4,7 @@ export default function TermsContent() {
       <section>
         <h3 className="text-base font-semibold text-gray-900">이용약관</h3>
         <p className="mt-2">
-          본 약관은 Gugudan(이하 “서비스”)의 이용과 관련하여 서비스와 이용자 간의
+          본 약관은 Love-Note(이하 “서비스”)의 이용과 관련하여 서비스와 이용자 간의
           권리·의무 및 책임사항을 규정합니다.
         </p>
       </section>

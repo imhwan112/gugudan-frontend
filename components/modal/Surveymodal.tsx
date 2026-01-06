@@ -73,6 +73,11 @@ const goDone = (finalAnswers: Record<string, string>) => {
   
   // ✅ 백그라운드에서 서버 전송 (모달은 안 닫음)
   onComplete(finalAnswers);
+  // ✅ 사용자에게 즉시 피드백
+  alert("설문에 응해주셔서 감사합니다 💗");
+
+  // ✅ 모달 닫기
+  closeSafely();
 };
 
   const handleSelect = (questionId: string, value: string) => {
