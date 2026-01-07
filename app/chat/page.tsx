@@ -72,10 +72,10 @@ function ChatPageContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-white dark:bg-neutral-950" />}>
-      <ProtectedRoute>
+    <ProtectedRoute>
+      <Suspense fallback={null}>
         <ChatPageContent />
-      </ProtectedRoute>
-    </Suspense>
+      </Suspense>
+    </ProtectedRoute>
   );
 }
